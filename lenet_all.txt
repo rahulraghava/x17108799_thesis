@@ -1,0 +1,7 @@
+Selected model is  lenet5  for class  all
+Results for class  airplane  test is Error :  0.26697  and Accuracy :  0.90212
+Results for class  bus  test is Error :  0.33557  and Accuracy :  0.87058
+Results for class  car  test is Error :  0.2873  and Accuracy :  0.87938
+Results for class  dog  test is Error :  0.35882  and Accuracy :  0.87451
+Results for class  person  test is Error :  0.24792  and Accuracy :  0.90476
+Results for class  train  test is Error :  0.28842  and Accuracy :  0.90184

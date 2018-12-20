@@ -3,9 +3,9 @@
 import argparse
 parser = argparse.ArgumentParser(description="Train CNN model")
 parser.add_argument("-c","--classes",choices=['airplane','bus', 'car', 'dog', 'person', 'train', 'all'],required=True, help="File with URL for download")
-parser.add_argument("-m", "--model", choices=['lenet5','densenet', 'squeezenet', 'lenet5_64'], required=True, help="Select the Models from the list")
+parser.add_argument("-m", "--model", choices=['lenet5', 'lenet5_64'], required=True, help="Select the Models from the list")
 parser.add_argument("-d","--dir", default="data", help="Path of training images or image")
-parser.add_argument("-p","--pridict",help="Pridict the given image", action="store_true")
+parser.add_argument("-p","--pridict",help="Pridict the given image from dir", action="store_true")
 parser.add_argument("-e","--evaluate",help="evaluate the object image", action="store_true")
 args = parser.parse_args()
 
@@ -16,7 +16,7 @@ from glob import glob
 from random import shuffle
 from jfile import jfile
 from cv2 import imread, resize 
-print(args.evaluate)
+#print("Selected model is ", args.model, " for class ", args.classes )
 no_c = 7 if args.classes == 'all' else 2
 type_mod = eval(args.model)(no_c)
 height, width = type_mod.height, type_mod.width
@@ -32,7 +32,7 @@ if args.pridict != True and args.evaluate != True:
         for c in _class:
             dic[f].extend(list( w for w in glob(p+c+'*'))) 
         shuffle(dic[f])
-        print(len(dic[f]))
+        
         for e in dic[f]:
             tmp = imread(e)
             arr[f]['x'].append(resize(tmp,(type_mod.height, type_mod.width)))
@@ -50,7 +50,7 @@ if args.pridict != True and args.evaluate != True:
     val = val_gen.flow(np.asarray(arr['val']['x']), y = to_categorical(arr['val']['y'], num_classes = len(_class)), batch_size=32)
     name = args.model+'_'+args.classes 
     from keras.callbacks import CSVLogger
-    csvlogger = CSVLogger('log/'+ name +'.log')
+    csvlogger = CSVLogger('log/'+ name +'.csv')
     history = model.fit_generator(train , epochs = 25, steps_per_epoch=len(train),validation_data = val,validation_steps = len(val),  use_multiprocessing=True, callbacks=[csvlogger])
     model.save('models/'+ name + '.h5')
     output = jfile('output')
@@ -66,12 +66,15 @@ if args.pridict != True and args.evaluate != True:
     plt.xlabel("no of epochs")
     plt.ylabel("values")
     plt.savefig('fig/'+ name +'.jpg')
+
+
 elif args.evaluate == True:
     from keras.preprocessing.image import ImageDataGenerator
     from keras.utils import to_categorical
     from keras.models import load_model 
     name = args.model+'_'+args.classes 
-    model = load_model("models/" + name + ".h5")
+    l = "multi object CNN" if args.classes == "all" else "single object CNN"
+    model = load_model("models_res/" + name + ".h5")
     ev_class = _class[1:]
     val_gen = ImageDataGenerator(rescale=1/255)
     p = args.dir +"/val/"
@@ -83,10 +86,10 @@ elif args.evaluate == True:
             tmp = imread(e)
             arr['x'].append(resize(tmp,(type_mod.height, type_mod.width)))
             arr['y'].append(_class.index(e.split('/')[-1].split('_')[0]))
-            print("Total number of images imported -> ", len(arr['y']), ' of ', len(dic),end='\r')
+            #print("Total number of images imported -> ", len(arr['y']), ' of ', len(dic),end='\r')
         val = val_gen.flow(np.asarray(arr['x']), y = to_categorical(arr['y'], num_classes = len(_class)), batch_size=32)
         res = model.evaluate_generator(val , steps=len(val), use_multiprocessing=True, verbose=0)
-        print("Results for class ", a ," test is Loss : " ,res[0], " and Accuracy : " , res[1])
+        print("Results for network ",args.model, " in ", l ," and for object ", a ,"- Error : " ,round(res[0], 5 ), " and Accuracy : " , round(res[1], 5))
 
 elif args.pridict == True:
     from keras.models import load_model 
@@ -99,6 +102,8 @@ elif args.pridict == True:
     res = model.predict(i)
     for i in range(len(_class)):
         print(_class[i], " : ", round(res[0][i] * 100, 2), '%' )
+else:
+    pass
 
         
 
